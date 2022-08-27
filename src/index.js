@@ -12,7 +12,7 @@ const customers = [];
 function cpfExist(req, res, next){
 
     const { cpf } = req.headers;
-    const customer = customers.find((customer) => customer.cpf === cpf); 
+    const customer = customers.find(customer => customer.cpf === cpf); 
 
     if(!customer){
 
@@ -25,6 +25,20 @@ function cpfExist(req, res, next){
     return next();
 
 };
+
+function getBalance(statement){
+
+    const balance = statement.reduce((acc, operation) => {
+      if(operation.type === 'credit') {
+        return acc + operation.amount;
+      }else{
+        return acc - operation.amount; 
+      }
+    }, 0);
+  
+    return balance;
+
+  }
 
 /**
  * 
@@ -57,7 +71,7 @@ app.post("/account", (req,res) => {
         cpf,
         name,
         id: uuidv4(),
-        statement: [],
+        statement: []
 
     });
 
@@ -83,9 +97,36 @@ app.post("/deposit", cpfExist, (req, res) =>{
         description,
         amount,
         create_at: new Date(),
-        type: "Credit"
+        type: 'credit'
 
     }
+
+    customer.statement.push(statementOperation);
+
+    return res.status(201).send();
+
+});
+
+app.post("/withdraw", cpfExist, (req, res) => {
+
+    const { amount } = req.body;
+    const { customer } = req;
+
+    const balance = getBalance(customer.statement);
+
+    if(balance < amount){
+
+        return res.status(400).json({error: "Saldo Insuficiente"});
+
+    }
+
+    const statementOperation = {
+
+        amount,
+        create_at: new Date(),
+        type: 'debit'
+
+    };
 
     customer.statement.push(statementOperation);
 
