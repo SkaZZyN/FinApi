@@ -46,11 +46,17 @@ app.post("/account", (req,res) => {
 
 });
 
-app.get("/statement/:cpf", (req,res) => {
+app.get("/statement", (req,res) => {
 
-    const { cpf } = req.params;
+    const { cpf } = req.headers;
 
     const customer = customers.find((customer) => customer.cpf === cpf); 
+
+    if(!customer){
+
+        return res.status(400).json({error: "CPF não encontrado!"});
+
+    }
 
     return res.json(customer.statement);
 
