@@ -7,6 +7,25 @@ app.use(express.json());
 
 const customers = [];
 
+// Middleware
+
+function cpfExist(req, res, next){
+
+    const { cpf } = req.headers;
+    const customer = customers.find((customer) => customer.cpf === cpf); 
+
+    if(!customer){
+
+        return res.status(400).json({error: "CPF não encontrado!"});
+
+    }
+
+    req.customer = customer;
+
+    return next();
+
+};
+
 /**
  * 
  * cpf - string
@@ -46,20 +65,31 @@ app.post("/account", (req,res) => {
 
 });
 
-app.get("/statement", (req,res) => {
+app.get("/statement", cpfExist, (req,res) => {
 
-    const { cpf } = req.headers;
+    const { customer } = req;
+    return res.json(customer.statement);
 
-    const customer = customers.find((customer) => customer.cpf === cpf); 
+});
 
-    if(!customer){
+app.post("/deposit", cpfExist, (req, res) =>{
 
-        return res.status(400).json({error: "CPF não encontrado!"});
+    const { description, amount } = req.body;
+
+    const { customer } = req;
+
+    const statementOperation = {
+
+        description,
+        amount,
+        create_at: new Date(),
+        type: "Credit"
 
     }
 
-    return res.json(customer.statement);
+    customer.statement.push(statementOperation);
 
+    return res.status(201).send();
 
 });
 
